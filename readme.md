@@ -42,6 +42,18 @@ Or use this command:
 
 `git clone https://github.com/Animator-Anon/animator_extension extensions/animator_extension`
 
+### FILM
+FILM needs to be installed separately, it is not bundled with this extension. Head to 
+https://github.com/google-research/frame-interpolation to get it done. Once you have it installed, create a .bat file 
+that takes two arguments and can run the script from any location. The first argument is the source picture location, 
+which this script will set automatically, and the second is the number of iterations, or sub frames to add.
+In my case, I installed FILM in a python VENV, different to the one the webUI is running in, so I have to change to it:<br>
+```
+call %USERPROFILE%\miniconda3\condabin\conda.bat activate ldm
+python -m eval.interpolator_cli --pattern "%1" --model_path pretrained_models\film_net\Style\saved_model --times_to_interpolate %2
+call %USERPROFILE%\miniconda3\condabin\conda.bat deactivate
+```
+
 ## Keyframe example:
 There seems to be confusion on how to use the keyframes. Copy them into the keyframe box and change the values to suit.
 Here is an example:
@@ -62,17 +74,7 @@ the different prompts are applied at the times. No seeds have been specified, so
 
 There are some persistent settings that are on the WebUI settings page. These will be stored by WebUI.
 - FILM batch or script file, including full path
-    - Full path to a batch file that can be called for FILM interpolation. The bat file will do what ever is required to
-  make the FILM interpolation happening. The bat file must take two arguments. The first one being the GLOB path and 
-  pattern for the input files, and the second being the number of passes or times to interpolate. This isn't the same as
-  adding n frames inbetween every source frame, but the number of times to add frames between every frame. This works
-  out to be adding 2^(n-1) frames between every source frame? Don't quote me on that.
-  For example, my bat file:
-
-call %USERPROFILE%\miniconda3\condabin\conda.bat activate ldm \
-python -m eval.interpolator_cli --pattern "%1" --model_path pretrained_models\film_net\Style\saved_model --times_to_interpolate %2 \
-call %USERPROFILE%\miniconda3\condabin\conda.bat deactivate
-
+    - Full path to a batch file that can be called for FILM interpolation.
 - Prop folder
     - The folder that prop pictures will be read from.
 - New output folder

@@ -131,7 +131,10 @@ def ui_block_generation():
     with gr.Blocks():
         with gr.Accordion("Generation Parameters", open=False):
             gr.HTML("<p>These parameters mirror those in txt2img and img2img mode. They are used "
-                    "to create the initial image in loopback mode.</p>")
+                    "to create the initial image in loopback mode.<br>"
+                    "<b>Seed Travel</b>: Allow use of sub seeds to 'smoothly' change from one seed to the next. Only "
+                    "makes sense to use if you manually have some seeds set in the keyframes."
+                    "</p>")
         steps = gr.Slider(minimum=1, maximum=150, step=1, label="Sampling Steps", value=20)
         from modules.sd_samplers import samplers_for_img2img
         sampler_index = gr.Radio(label='Sampling method',
@@ -164,19 +167,22 @@ def ui_block_generation():
 def ui_block_animation():
     with gr.Blocks():
         with gr.Accordion("Animation Parameters", open=False):
-            gr.HTML("Parameters for the animation. Total length in seconds will determine the length of"
-                    " the animation.<br>"
+            gr.HTML("Parameters for the animation.<br>"
                     "<ul>"
-                    "<li>Total Animation Length: How long the resulting animation will be. Total number "
+                    "<li><b>Total Animation Length</b>: How long the resulting animation will be. Total number "
                     "of frames rendered will be this time * FPS</li> "
-                    "<li>Smoothing Frames: The number of additional intermediate frames to insert between "
+                    "<li><b>Framerate</b>: Used to calculate the number of frames, and set the rate in the output "
+                    "video.</li> "
+                    "<li><b>Smoothing Frames</b>: The number of additional intermediate frames to insert between "
                     "every rendered frame. These will be a faded merge of the surrounding frames.</li> "
-                    "<li>Add Noise: Add simple noise to the image in the form of random coloured circles. "
+                    "<li><b>FILM Interpolation</b>: Allow use of "
+                    "<a href=\"https://github.com/google-research/frame-interpolation\"><u>FILM</u></a> to do the "
+                    "interpolation, it needs to be installed separately and a bat file created so this script can call "
+                    "it. Smoothing frame count is handled different by FILM. Check readme file.</li>"
+                    "<li><b>Add Noise</b>: Add simple noise to the image in the form of random coloured circles. "
                     "These can help the loopback mode create new content.</li> "
-                    "<li>Loopback: This is the img2img loopback mode where the resulting image, "
+                    "<li><b>Loopback Mode</b>: This is the img2img loopback mode where the resulting image, "
                     "before post processing, is pre-processed and fed back in..</li> "
-                    "<li>Prop Folder: Path to folder containing transparent .png files that can be "
-                    "superimposed in pre or post processing.</li> "
                     "</ul>")
         with gr.Row():
             total_time = gr.Number(label="Total Animation Length (s)", lines=1, value=10.0)
@@ -197,10 +203,13 @@ def ui_block_animation():
 def ui_block_processing():
     with gr.Blocks():
         with gr.Accordion("Prompt Template, applied to each keyframe below", open=False):
-            gr.HTML("<p>Prompt interpolation will set both before and after prompts with a weighting that linearly "
-                    "grows from the current prompt to the next.<br>"
-                    "Similar to styles, these prompt templates are applied to every frame in addition to the"
-                    " keyframe / VTT prompts below.</p>")
+            gr.HTML("<ul>"
+                    "<li><b>Prompt interpolation:</b> Each frame's prompt will be a merge of the preceeding and "
+                    "following pronmpts.</li>"
+                    "<li><b>Positive / Negative Prompts</b>: Template prompts that will be applied to every frame.</li>"
+                    "<li><b>Use pos prompts from style</b>: Select a pre-saved style that will be added to the "
+                    "template at run time.</li>"
+                    "</ul>")
         prompt_interpolation = gr.Checkbox(label='Prompt Interpolation', value=True)
         with gr.Row():
             tmpl_pos = gr.Textbox(label="Positive Prompts", lines=1, value="")
