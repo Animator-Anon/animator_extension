@@ -107,6 +107,8 @@ def myprocess(*args, **kwargs):
     # Make bat files before video incase we interrupt it, and so we can generate vids on the fly.
     export.make_batch_files(myset)
 
+    # tmp_live_previews_enable = shared.opts.live_previews_enable
+    # shared.opts.live_previews_enable = False
 
     shared.state.interrupted = False
     if myset['loopback']:
@@ -119,6 +121,8 @@ def myprocess(*args, **kwargs):
         export.make_videos(myset)
 
     shared.state.end()
+
+    # shared.opts.live_previews_enable = tmp_live_previews_enable
 
     return result, "done"
 
@@ -281,7 +285,7 @@ def ui_block_output():
 # Basic layout of page
 #
 def on_ui_tabs():
-    print("on_ui_tabs")
+    # print("on_ui_tabs")
     with gr.Blocks(analytics_enabled=False) as animator_tabs:
         with gr.Row():
             # left Column
@@ -332,7 +336,7 @@ def on_ui_tabs():
 # Define my options that will be stored in webui config
 #
 def on_ui_settings():
-    print("on_ui_settings")
+    # print("on_ui_settings")
     mysection = ('animatoranon', 'Animator Extension')
 
     shared.opts.add_option("animatoranon_film_folder",

@@ -3,3 +3,8 @@ __pycache__
 *.pyc
 *.pyo
 debug.txt
+.idea/animator_extension.iml
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml

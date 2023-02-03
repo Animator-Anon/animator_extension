@@ -119,11 +119,15 @@ def process_keyframes(mysettings: dict) -> pd.DataFrame:
 
     frame_count = math.ceil(mysettings['fps'] * mysettings['total_time'])
 
-    # Try and apply styles in addition to what was written into the template text boxes.
-    mysettings['tmpl_pos'] = shared.prompt_styles.apply_styles_to_prompt(mysettings['tmpl_pos'],
-                                                                         [mysettings['_style_pos'], 'None'])
-    mysettings['tmpl_neg'] = shared.prompt_styles.apply_negative_styles_to_prompt(mysettings['tmpl_neg'],
-                                                                                  [mysettings['_style_neg'], 'None'])
+    try:
+        # Try and apply styles in addition to what was written into the template text boxes.
+        mysettings['tmpl_pos'] = shared.prompt_styles.apply_styles_to_prompt(mysettings['tmpl_pos'],
+                                                                             [mysettings['_style_pos'], 'None'])
+        mysettings['tmpl_neg'] = shared.prompt_styles.apply_negative_styles_to_prompt(mysettings['tmpl_neg'],
+                                                                                      [mysettings['_style_neg'],
+                                                                                       'None'])
+    except Exception as e:
+        print(f"Error: Failed to apply styles to templates: {e}")
 
     # Define the columns in the pandas dataframe that will hold and calculate all the changing values..
     variables = {'pos1': np.nan,
