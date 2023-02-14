@@ -93,11 +93,6 @@ def myprocess(*args, **kwargs):
         os.makedirs(output_parent_folder)
     myset['output_path'] = output_parent_folder
 
-    # Save the parameters to a file.
-    settings_filename = os.path.join(myset['output_path'], "settings.txt")
-    with open(settings_filename, "w+", encoding="utf-8") as f:
-        json.dump(myset, f, ensure_ascii=False, indent=4)
-
     # Have to add the initial picture later on as it doesn't serialise well.
     myset['initial_img'] = args[i + 14]  # _initial_img
 
@@ -122,9 +117,19 @@ def myprocess(*args, **kwargs):
 
     shared.state.end()
 
+    # Save the parameters to a file.
+    settings_filename = os.path.join(myset['output_path'], "settings.txt")
+    with open(settings_filename, "w+", encoding="utf-8") as f:
+        json.dump(myset, f, ensure_ascii=False, indent=4)
+
     # shared.opts.live_previews_enable = tmp_live_previews_enable
 
-    return result, "done"
+    dict_str = '<ul>'
+    for i in myset.keys():
+        dict_str += f"<li>{i}:\t{myset[i]}</li>"
+    dict_str = '</ul>'
+
+    return result, dict_str
 
 
 def ui_block_generation():
@@ -329,13 +334,13 @@ def on_ui_tabs():
 
         btn_proc.click(fn=wrap_gradio_gpu_call(myprocess, extra_outputs=[gr.update()]),
                        _js="start_animator",
-                       inputs=[aa_htmllog, steps, sampler_index, width, height, cfg_scale, denoising_strength,
+                       inputs=[aa_htmlinfo, steps, sampler_index, width, height, cfg_scale, denoising_strength,
                                total_time, fps, smoothing, film_interpolation, add_noise, noise_strength, seed,
                                seed_travel, image_list, loopback_mode, prompt_interpolation,
                                tmpl_pos, tmpl_neg, key_frames, vid_gif, vid_mp4, vid_webm, style_pos, style_neg],
                        outputs=[aa_gallery, aa_htmlinfo])
 
-        btn_stop.click(fn=lambda: shared.state.interrupt())#,
+        btn_stop.click(fn=lambda: shared.state.interrupt()) #,
                        #_js="reenable_animator")
 
     return (animator_tabs, "Animator", "animator_extension"),

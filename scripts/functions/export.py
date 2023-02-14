@@ -4,11 +4,40 @@ import glob
 from modules import shared
 
 
+def calc_FPS(mysettings: dict):
+    '''
+        Frame rates.
+        Smoothing:
+            FPS += smoothing_frames * (FPS - 1)
+        FILM:
+        e.g. 10 + 9 + 18 + 36 + 72...
+            for i in range(smoothing_frames):
+                FPS += (FPS - 1)^i
+    '''
+    final_fps = 0
+    if mysettings['smoothing'] == 0:
+        final_fps = mysettings['fps']
+    elif mysettings['film_interpolation']:
+        final_fps = mysettings['fps']
+        added_frames = final_fps - 1
+        for i in range(mysettings['smoothing']):
+            final_fps += added_frames
+            added_frames *= 2
+        mysettings['final_fps'] = mysettings['fps']
+    else:
+        final_fps = mysettings['fps'] + mysettings['smoothing'] * (mysettings['fps'] - 1)
+
+    mysettings['final_fps'] = final_fps
+
+
 def make_batch_files(my_set: dict):
-    final_fps = my_set['fps'] + my_set['fps'] * my_set['smoothing']
-    make_gif(my_set['output_path'], 'video', final_fps, False, True)
-    make_mp4(my_set['output_path'], 'video', final_fps, False, True)
-    make_webm(my_set['output_path'], 'video', final_fps, False, True)
+    #final_fps = my_set['fps'] + my_set['fps'] * my_set['smoothing']
+    calc_FPS(my_set)
+
+    make_gif(my_set['output_path'], 'video', my_set['final_fps'], False, True)
+    make_mp4(my_set['output_path'], 'video', my_set['final_fps'], False, True)
+    make_webm(my_set['output_path'], 'video', my_set['final_fps'], False, True)
+    film_interpolation(my_set, False, True)
 
 
 def make_videos(my_set: dict):
@@ -24,7 +53,7 @@ def make_videos(my_set: dict):
     make_webm(my_set['output_path'], 'video', final_fps, my_set['vid_webm'], False)
 
 
-def film_interpolation(my_set: dict):
+def film_interpolation(my_set: dict, create_vid: bool = True, create_bat: bool = False):
     # Need to do a bunch of stuff to copy the frames to the film folder, run that script and then copy them back.
     # Check if FILM exists ...
 
@@ -48,23 +77,30 @@ def film_interpolation(my_set: dict):
             str(my_set['output_path']),
             str(my_set['smoothing']),
             ]
-    subprocess.call(args, cwd=film_folder, shell=True)
+    if create_vid:
+        subprocess.call(args, cwd=film_folder, shell=True)
 
-    # check it actually worked.
-    if not os.path.exists(os.path.join(my_set['output_path'], 'interpolated_frames')):
-        print('FILM failed to produce a result.')
-        return
+    if create_bat:
+        with open(os.path.join(my_set['output_path'], "makefilm.bat"), "w+", encoding="utf-8") as f:
+            f.writelines([" ".join(args)])
+            # f.writelines([" ".join(cmd), "\r\n", "pause"])
 
-    # Delete the files
-    filenames = glob.glob(os.path.join(my_set['output_path'], "*.png"))
-    for filename in filenames:
-        os.remove(filename)
+    if create_vid:
+        # check it actually worked.
+        if not os.path.exists(os.path.join(my_set['output_path'], 'interpolated_frames')):
+            print('FILM failed to produce a result.')
+            return
 
-    filenames = glob.glob(os.path.join(my_set['output_path'], 'interpolated_frames', '*.png'))
-    i = 0
-    for filename in filenames:
-        os.rename(filename, os.path.join(my_set['output_path'], f'frame_{i:05d}.png'))
-        i += 1
+        # Delete the files
+        filenames = glob.glob(os.path.join(my_set['output_path'], "*.png"))
+        for filename in filenames:
+            os.remove(filename)
+
+        filenames = glob.glob(os.path.join(my_set['output_path'], 'interpolated_frames', '*.png'))
+        i = 0
+        for filename in filenames:
+            os.rename(filename, os.path.join(my_set['output_path'], f'frame_{i:05d}.png'))
+            i += 1
 
 
 def make_gif(filepath: str, filename: str, fps: float, create_vid: bool, create_bat: bool):
