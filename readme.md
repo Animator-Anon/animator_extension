@@ -17,18 +17,13 @@ someone else's implementation to figure out why and don't want to steal their co
 2. [Major Features](#majorfeatures)
     1. [FILM](#film)
 3. [Installation](#installation)
-4. [Example](#example)
+4. [Examples](#example)
 5. [Settings](#settings)
-    1. [persistent_settings](#persistent_settings)
-    2. [video_formats](#video_formats)
-    3. [total_animation_length](#total_animation_length)
-    4. [framerate](#framerate)
-    5. [denoising_strength](#denoising_strength)
-    6. [denoising_decay](#denoising_decay)
-    7. [zoom_factor](#zoom_factor)
-    8. [x_pixel_shift](#x_pixel_shift)
-    9. [y_pixel_shift](#y_pixel_shift)
-    10. [templates](#templates)
+    1. [Persistent Settings](#persistent_settings)
+    2. [Generation parameters](#generation_parameters)
+    3. [Animation Parameters](#animation_parameters)
+    4. [Prompt Templates](#prompt_templates)
+    5. [Video Formats](#video_formats)
 6. [Keyframes](#keyframes)
     1. [clear_stamp](#clear_stamp)
     2. [clear_text](#clear_text)
@@ -60,7 +55,7 @@ someone else's implementation to figure out why and don't want to steal their co
     - Post-processing effects can be added onto frames that are written to disk. Maybe used for 
       creating interesting videos.
 
-## Installation<a name="installation"></a>
+# Installation<a name="installation"></a>
 To create videos, you need FFMPEG installed and available in your path. i.e. open a command line and type in ffmpeg.exe,
 you should be able to run the program.<br>
 
@@ -85,69 +80,89 @@ python -m eval.interpolator_cli --pattern "%1" --model_path pretrained_models\fi
 call %USERPROFILE%\miniconda3\condabin\conda.bat deactivate
 ```
 
-## Keyframe example:<a name="example"></a>
+# Examples:<a name="example"></a>
 There seems to be confusion on how to use the keyframes. Copy them into the keyframe box and change the values to suit.
-Here is an example:
+Here are some examples:
 
-    0 | template | black and white, silent film, film grain | low quality, cropped
-    0 | transform | 2 | 0 | 0 | 0
-    0   | prompt | Shot of a sleeping person, possibly the narrator, in a dreamlike state | 
-    8   | prompt | Shot of a bright sun being extinguished, symbolizing the loss of hope |
-    16  | prompt | Close-up shot of stars wandering aimlessly in the darkness of space |
-    24  | prompt | Close-up shot of the barren and desolate landscape, with no sign of life or movement |
-    32  | prompt | Wide shot of the icy and dark earth, spinning in the moonless air |
+## Transform:<a name="example_transform"></a>
+    0   | template  | countryside, vineyard, grapevines, bunches of grapes, nice pencil drawing, masterpiece | low quality
+    0   | seed      | 1
+    0   | transform | 2   |    0 |    0 |   0
+    2   | transform | 1   |  200 |    0 |  90
+    4   | transform | 1   |    0 |  200 |   0
+    6   | transform | 1   | -200 |    0 | -90
+    8   | transform | 1   |    0 | -200 |   0
+    10  | transform | 0.5 |    0 |    0 |   0
 
-This will set up at time 0, the templates which will be appended onto the prompts at each prompt keyframe.
-Also a transform is started at time 0. The effect of all of these will be a zoom in on a constantly changing scene, as
-the different prompts are applied at the times. No seeds have been specified, so they will be random.
+![](./pics/example_transform.webm)
+A template is set at the start. Same with an initial seed value. SD1.5 was used.
+I would consider 200 pixels per second at this framerate to be too much, as it crates artifacts on the side which mostly get turned into pencils due to the prompts.
+You will also notice the interpolation of the translation parameters creates a smooth motion.
 
-## Settings:<a name="settings"></a>
+# Settings:<a name="settings"></a>
 Many explanations exist in the up in expandable sections of the page. Look for a triangle right side.
 
-### Persistent Settings:<a name="persistent_settings"></a>
-There are some persistent settings that are on the WebUI settings page. These will be stored by WebUI.
-- FILM batch or script file, including full path
-    - Full path to a batch file that can be called for FILM interpolation.
-- Prop folder
-    - The folder that prop pictures will be read from.
-- New output folder
-    - Output folder specifically used by this extension. Saves loading up the general output folders. 
+## Generation Parameters<a name="generation_parameters"></a>
+![geeneration_parameters](./pics/geeneration_parameters.png)
 
-### Video formats:<a name="video_formats"></a>
-Create GIF, webM or MP4 file from the series of images. Regardless, .bat files will be created with the right options to
-make the videos at a later time.
-
-### Total Animation Length (s):<a name="total_animation_length"></a>
-Total number of seconds to create. Will create fps frames for every second, as you'd expect.
-
-### Framerate:<a name="framerate"></a>
-Frames per second to generate.
+Most parameters here self-explanatory and the same as they would be for other tabs.
 
 ### Denoising Strength:<a name="denoising_strength"></a>
 Initial denoising strength value, overrides the value above which is a bit strong for a default. Will be overridden by
 keyframes when they are hit.
 Note that denoising is not scaled by fps, like other parameters are.
 
-### Denoising Decay:<a name="denoising_decay"></a>
-Experimental option to enable a half-life decay on the denoising strength. Its value is halved every second. Not that
-useful because of img2img embossing.
+### Seed travel:<a name="seed_travel"></a>
+Utilise the sub-seeds to travel between two different, and unrelated by design, seeds. If you have set two different 
+seeds using the keyframes below, all intermediate frames will have:
+- Seed value will be the first seed value,
+- Sub-Seed value will by the end seed value,
+- The sub-seed strength will be a value from 0.0 to 1.0.
+This can be handy if you keep a set series of prompts but with different seeds and to try and create an animation from 
+- one to the other.
 
-### Zoom Factor (scale/s):<a name="zoom_factor"></a>
-Initial zoom in (>1) or out (<1), at this rate per second. E.g. 2.0 will double size (and crop) every second. Will be
-overridden by keyframes when they are hit.
+## Animation Parameters<a name="animation_parameters"></a>
+![animation_parameters](./pics/animation_parameters.png)
 
-### X Pixel Shift (pixels/s):<a name="x_pixel_shift"></a>
-Shift the image right (+) or left (-) in pixels per second. Will be overridden by keyframes when they are hit.
+### Total Animation Length (s):<a name="total_animation_length"></a>
+Total number of seconds to create, can be a floating point number. Will calculate the number of frames as time * FPS.
+The idea here is you can plan out a flow FPS version of an animation, and then up the framerate for a more detailed 
+render. That is the theory anyway, it is more complex than that.
 
-### Y Pixel Shift (pixels/s):<a name="y_pixel_shift"></a>
-Shift the image down (+) or up (-) in pixels per second. Will be overridden by keyframes when they are hit.
+### Framerate:<a name="framerate"></a>
+Frames per second to generate. Smoothing frames below will insert additional frames and change the resulting FPS, but 
+the length should remain the same. You can change the FPS value in the resulting bat files in the output folder and run 
+it to re-create the video.
+
+### Smoothing Frames:<a name="smoothing_frames"></a>
+Insert additional frames between every rendered frame. They will be a basic faded merge between the surrounding rendered
+frames, so are quick to generate and an easy way to bump up the frame rate.
+
+![smoothing](./pics/smoothing.png)
+
+### FILM Interpolation:<a name="film_interpolation"></a>
+Call out the FILM interpolation to insert additional frames between rendered keyframes. FILM must be installed 
+separately and a bat file created, see above. The method FILM uses to insert additional frames is different to my method. The Smoothing Frame count is a number of passes FILM does over the image series, each time inserting new frames. The resuling FPS will be:
+
+![FILM](./pics/FILM.png)
+
+Or look at the settings.csv file created int he output folder, it will contain a final_fps value.
+
+## Prompt Templates<a name="prompt_templates"></a>
+![prompt_templates](./pics/prompt_templates.png)
+
+### Prompt Interpolation:
+This is another feature of some diffusers, where it can generate an image part-way between two sets of prompts using the 
+(prompt1:0.5) AND (prompt2:0.5) format. This can be automated here and the script can automatically render each frame 
+using an intermediate prompt between the previous and next prompts. This makes more sense to NOT use it in the loopback
+mode, since it can generate unique images without relying on previous ones.
 
 ### Templates:<a name="templates"></a>
 Provide common positive and negative prompts for each keyframe below, save typing them out over and over. They will only
 be applied when a keyframe is hit. The prompts in the keyframes will be appended to these and sent for processing until
 the next keyframe that has a prompt.
 
-### Keyframes:<a name="keyframes"></a>
+# Keyframes:<a name="keyframes"></a>
 Key frames have been broken down into individual commands, since the old keyframe was blowing out.
 Commands:
 
@@ -200,7 +215,7 @@ Set the current transform.
 - Format: `time_s | transform | zoom | x_shift | y_shift | rotation`
 - time_s: Time in seconds from the start to make the change.
 - transform: Command name.
-- zoom: New zoom value. 1 = 100% per second. 2 = zoom in 200% over 1 second.
+- zoom: New zoom value. This is a scale used to resize the image. 2 = scale image to 200% over 1 second. 0.5 = scale image to 50% over 1 second.
 - x_shift: X shift value, in pixels per second.
 - y_shift: Y shift value, in pixels per second.
 - rotation: Rotation, in degrees per second.
@@ -292,7 +307,21 @@ maybe set the initial model in frame 0 first.
 - model: Command name.
 - model_name: Pick one from the list. Just the name with no extension or hash is fine.
 
-### Changelog<a name="changelog"></a>
+## Persistent Settings:<a name="persistent_settings"></a>
+There are some persistent settings that are on the WebUI settings page. These will be stored by WebUI.
+- FILM batch or script file, including full path
+    - Full path to a batch file that can be called for FILM interpolation.
+- Prop folder
+    - The folder that prop pictures will be read from.
+- New output folder
+    - Output folder specifically used by this extension. Saves loading up the general output folders. 
+
+## Video formats:<a name="video_formats"></a>
+Create GIF, webM or MP4 file from the series of images. Regardless, .bat files will be created with the right options to
+make the videos at a later time.
+
+
+# Changelog<a name="changelog"></a>
 - Extension
     - Re-fectored script into an extension, easier to manage and work with.
 - v6
