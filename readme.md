@@ -93,9 +93,8 @@ Here are some examples:
     6   | transform | 1   | -200 |    0 | -90
     8   | transform | 1   |    0 | -200 |   0
     10  | transform | 0.5 |    0 |    0 |   0
-<video width="320" height="240" controls>
-  <source src="./pics/example_transform.mp4" type="video/mp4">
-</video>
+
+https://user-images.githubusercontent.com/114563845/218895145-62a8e748-8410-4b7d-af73-c52382c30a7a.mp4
 
 A template is set at the start. Same with an initial seed value. SD1.5 was used.
 I would consider 200 pixels per second at this framerate to be too much, as it crates artifacts on the side which mostly get turned into pencils due to the prompts.
