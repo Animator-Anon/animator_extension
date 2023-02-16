@@ -18,6 +18,9 @@ someone else's implementation to figure out why and don't want to steal their co
     1. [FILM](#film)
 3. [Installation](#installation)
 4. [Examples](#example)
+   1. [Transform](#example_transform)
+   2. [Prompt Interpolation](#example_prompt_interpolation)
+   3. [Seed Travel](#example_seed_travel)
 5. [Settings](#settings)
     1. [Persistent Settings](#persistent_settings)
     2. [Generation parameters](#generation_parameters)
@@ -94,11 +97,34 @@ Here are some examples:
     8   | transform | 1   |    0 | -200 |   0
     10  | transform | 0.5 |    0 |    0 |   0
 
-![Example Transform](./pics/example_transform.gif)
+https://user-images.githubusercontent.com/114563845/219329470-eff355a7-b24b-4072-bdac-bc86aa9bcf7c.mp4
 
-A template is set at the start. Same with an initial seed value. SD1.5 was used.
-I would consider 200 pixels per second at this framerate to be too much, as it crates artifacts on the side which mostly get turned into pencils due to the prompts.
-You will also notice the interpolation of the translation parameters creates a smooth motion.
+A template is set at the start, which would be the same as setting a prompt in this case as there are no changes.
+An initial seed value is set, to make the result reproducible.I would consider 200 pixels per second and 90 degrees per 
+second rotation at this framerate to be too much, as it crates artifacts on the side which mostly get turned into 
+pencils due to the prompts.You will also notice the interpolation of the translation parameters creates a smooth motion.
+Technically there is not a full 2 seconds of zoom in at the start, it starts at 2 and works it's way down to zero.
+
+## Prompt Interpolation:<a name="example_prompt_interpolation"></a>
+    0 | template | masterpiece | poor quality
+    0 | seed | 1
+    0 | prompt | countryside, sunny day, lush green fields, cattle | 
+    10 | prompt | hell scape, desolation, post apocolyptic, demons |
+    10 | seed | 1
+
+This seems somewhat broken at the moment, it can create erratic results that jump back and forth.
+What I have done there is fix the seed over the entire 10s run, disable loopback mode (in the UI), and have it generate 
+100 frames from the start prompt to the end prompt.
+
+## Seed Travel:<a name="example_seed_travel"></a>
+    0 | prompt | road, transformer, optimus prime, masterpiece | poor quality
+    0 | seed | 2763606728
+    4 | seed | 2763606725
+
+https://user-images.githubusercontent.com/114563845/219329858-37609fdc-5998-43fe-86c6-fdf27f13c911.mp4
+
+Turn on seed travel, turn off loopback, set a non-ancestral sampler, and you are good to go. Ancestral samplers such as 
+Euler_a don't work well with seed travelling.
 
 # Settings:<a name="settings"></a>
 Many explanations exist in the up in expandable sections of the page. Look for a triangle right side.
