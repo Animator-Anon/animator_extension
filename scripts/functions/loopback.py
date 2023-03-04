@@ -164,6 +164,23 @@ def main_process(myset: dict,
         x_shift_cumulative = x_shift_cumulative - int(x_shift_cumulative)
         y_shift_cumulative = y_shift_cumulative - int(y_shift_cumulative)
 
+        # Perspective transform
+        if  df.loc[frame_no, ['px0']][0] != 0 or df.loc[frame_no, ['py0']][0] != 0 or \
+            df.loc[frame_no, ['px1']][0] != 0 or df.loc[frame_no, ['py1']][0] != 0 or \
+            df.loc[frame_no, ['px2']][0] != 0 or df.loc[frame_no, ['py2']][0] != 0 or \
+            df.loc[frame_no, ['px3']][0] != 0 or df.loc[frame_no, ['py3']][0] != 0:
+
+            init_img = \
+                preprocessing.perspective_transform(init_img,
+                                                   [(df.loc[frame_no, ['px0']][0], df.loc[frame_no, ['py0']][0]),
+                                                    (df.loc[frame_no, ['px1']][0], df.loc[frame_no, ['py1']][0]),
+                                                    (df.loc[frame_no, ['px2']][0], df.loc[frame_no, ['py2']][0]),
+                                                    (df.loc[frame_no, ['px3']][0], df.loc[frame_no, ['py3']][0])],
+                                                   [(0, 0),
+                                                    (init_img.width, 0),
+                                                    (init_img.width, init_img.height),
+                                                    (0, init_img.height)])
+
         # Props
         if len(props) > 0:
             # print("Pasting prop into image.")

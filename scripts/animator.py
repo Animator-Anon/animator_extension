@@ -119,6 +119,7 @@ def myprocess(*args, **kwargs):
 
     # Save the parameters to a file.
     settings_filename = os.path.join(myset['output_path'], "settings.txt")
+    myset['initial_img'] = None # No need to save the initial image
     with open(settings_filename, "w+", encoding="utf-8") as f:
         json.dump(myset, f, ensure_ascii=False, indent=4)
 
@@ -253,6 +254,7 @@ def ui_block_keyframes():
                     "time_s | denoise | denoise_value<br>"
                     "time_s | cfg_scale | cfg_scale_value<br>"
                     "time_s | transform | zoom | x_shift | y_shift | rotation<br>"
+                    "time_s | perspective | x0 | y0 | x1 | y1 | x2 | y2 | x3 | y3<br>"
                     "time_s | noise | added_noise_strength<br>"
                     "time_s | set_text | textblock_name | text_prompt | x_pos | y_pos | width | height | fore_color |"
                     " back_color | font_name<br> "

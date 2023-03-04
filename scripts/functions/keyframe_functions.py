@@ -147,11 +147,12 @@ def process_keyframes(mysettings: dict) -> pd.DataFrame:
     df = pd.DataFrame(variables, index=range(frame_count + 1))
 
     # Preload the dataframe with some values, so they can be filled down correctly.
-    df.loc[0, ['denoise', 'x_shift', 'y_shift', 'zoom', 'rotation', 'noise', 'cfg_scale']] = \
+    df.loc[0, ['denoise', 'x_shift', 'y_shift', 'zoom', 'rotation', 'noise', 'cfg_scale',
+               'px0', 'py0', 'px1', 'py1', 'px2', 'py2', 'px3', 'py3' ]] = \
         [mysettings['denoising_strength'],
          0.0, 0.0, 1.0, 0.0,
          mysettings['noise_strength'],
-         mysettings['cfg_scale']]
+         mysettings['cfg_scale'], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
 
     # Iterate through the supplied keyframes, splitting by newline.
     for key_frame in mysettings['key_frames'].splitlines():
@@ -182,6 +183,18 @@ def process_keyframes(mysettings: dict) -> pd.DataFrame:
                         float(key_frame_parts[4]) / mysettings['fps'],
                         float(key_frame_parts[2]) ** (1.0 / mysettings['fps']),
                         float(key_frame_parts[5]) / mysettings['fps']]
+        elif tmp_command == "perspective" and len(key_frame_parts) == 10:
+            # time_s | perspective | x0 | y0 | x1 | y1 | x2 | y2 | x3 | y3
+            df.loc[tmp_frame_no,
+                   ['px0', 'py0', 'px1', 'py1', 'px2', 'py2', 'px3', 'py3']
+                   ] = [float(key_frame_parts[2]),
+                        float(key_frame_parts[3]),
+                        float(key_frame_parts[4]),
+                        float(key_frame_parts[5]),
+                        float(key_frame_parts[6]),
+                        float(key_frame_parts[7]),
+                        float(key_frame_parts[8]),
+                        float(key_frame_parts[9])]
         elif tmp_command == "denoise" and len(key_frame_parts) == 3:
             # Time (s) | denoise | denoise
             df.loc[tmp_frame_no, ['denoise']] = [float(key_frame_parts[2])]

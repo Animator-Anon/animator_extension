@@ -12,7 +12,7 @@ Must have ffmpeg installed in path to create movies, but image sequences will be
 This suffers from img2img embossing, if the image is static for too long. I would have to look at 
 someone else's implementation to figure out why and don't want to steal their code.
 
-## Table of Contents
+## Table of Contents<a name="toc"></a>
 1. [Animation Script](#animationscript)
 2. [Major Features](#majorfeatures)
     1. [FILM](#film)
@@ -82,6 +82,7 @@ call %USERPROFILE%\miniconda3\condabin\conda.bat activate ldm
 python -m eval.interpolator_cli --pattern "%1" --model_path pretrained_models\film_net\Style\saved_model --times_to_interpolate %2
 call %USERPROFILE%\miniconda3\condabin\conda.bat deactivate
 ```
+[Bsck to top](#toc)
 
 # Examples:<a name="example"></a>
 There seems to be confusion on how to use the keyframes. Copy them into the keyframe box and change the values to suit.
@@ -105,6 +106,26 @@ second rotation at this framerate to be too much, as it crates artifacts on the 
 pencils due to the prompts.You will also notice the interpolation of the translation parameters creates a smooth motion.
 Technically there is not a full 2 seconds of zoom in at the start, it starts at 2 and works it's way down to zero.
 
+## Prompts:<a name="example_prompts"></a>
+    0 | template | masterpiece, high quality | cropped, watermark, text, poor quality
+    0 | prompt | barn, haybales, cats | dogs
+    5 | prompt | field, cows, fence | aliens
+    10 | prompt | combine harvester, wheat field | organic crops
+
+(movie placeholder)
+
+What's the difference between templates, prompts and styles?
+- A style is a pre-defined set of prompts you can save in the UI and apply at any time. The one you pick from the drop down will be treated like a template and be applied to every frame.
+- A template is a set of prompts that will be applied to all frames.
+- A prompt when set, will be applied until they are changed again. The templates and styles will be added.
+
+Other types of prompts:
+
+    time_s | prompt | positive_prompts | negative_prompts
+    time_s | template | positive_prompts | negative_prompts
+    time_s | prompt_from_png | file_path
+    time_s | prompt_vtt | vtt_filepath
+
 ## Prompt Interpolation:<a name="example_prompt_interpolation"></a>
     0 | template | masterpiece | poor quality
     0 | seed | 1
@@ -125,6 +146,18 @@ https://user-images.githubusercontent.com/114563845/219329858-37609fdc-5998-43fe
 
 Turn on seed travel, turn off loopback, set a non-ancestral sampler, and you are good to go. Ancestral samplers such as 
 Euler_a don't work well with seed travelling.
+
+## Sources:<a name="example_sources"></a>
+    0 | prompt | road, transformer, optimus prime, masterpiece | poor quality
+    0 | seed | 2763606728
+    4 | seed | 2763606725
+
+(movie placeholder)
+
+You can specify a different source for images in the process loop. Only one source can/will be set. You can pick either a movie or a series of images, and they will be used in alphabetical order.
+This only makes sense in loopback mode, so you can get img2img to work on a video file 
+
+[Bsck to top](#toc)
 
 # Settings:<a name="settings"></a>
 Many explanations exist in the up in expandable sections of the page. Look for a triangle right side.
@@ -188,6 +221,8 @@ mode, since it can generate unique images without relying on previous ones.
 Provide common positive and negative prompts for each keyframe below, save typing them out over and over. They will only
 be applied when a keyframe is hit. The prompts in the keyframes will be appended to these and sent for processing until
 the next keyframe that has a prompt.
+
+[Bsck to top](#toc)
 
 # Keyframes:<a name="keyframes"></a>
 Key frames have been broken down into individual commands, since the old keyframe was blowing out.
@@ -334,6 +369,8 @@ maybe set the initial model in frame 0 first.
 - model: Command name.
 - model_name: Pick one from the list. Just the name with no extension or hash is fine.
 
+[Bsck to top](#toc)
+
 ## Persistent Settings:<a name="persistent_settings"></a>
 There are some persistent settings that are on the WebUI settings page. These will be stored by WebUI.
 - FILM batch or script file, including full path
@@ -347,6 +384,7 @@ There are some persistent settings that are on the WebUI settings page. These wi
 Create GIF, webM or MP4 file from the series of images. Regardless, .bat files will be created with the right options to
 make the videos at a later time.
 
+[Bsck to top](#toc)
 
 # Changelog<a name="changelog"></a>
 - Extension

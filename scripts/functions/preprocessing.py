@@ -35,6 +35,34 @@ def transform_image(img: Image, rot: float, x: int, y: int, zoom: float) -> Imag
 
     return resimg
 
+
+def perspective_transform(image, src_points, dst_points):
+    """
+    Apply perspective transform on pillow image using transformation matrix.
+    Args:
+        image (PIL Image): Input image.
+        src_points (list): List of four source points.
+        dst_points (list): List of four destination points.
+    Returns:
+        PIL Image: Perspective transformed image.
+    """
+    # Convert the input image to OpenCV format.
+    image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+
+    # Calculate the perspective transformation matrix.
+    src_pts = np.float32(src_points)
+    dst_pts = np.float32(dst_points)
+    matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
+
+    # Apply the perspective transformation.
+    transformed = cv2.warpPerspective(image, matrix, (image.shape[1], image.shape[0]))
+
+    # Convert the transformed image back to PIL format.
+    timg = Image.fromarray(cv2.cvtColor(transformed, cv2.COLOR_BGR2RGB))
+
+    return timg.filter(ImageFilter.UnsharpMask(radius=2, percent=120))
+
+
 def old_setup_color_correction(image):
     # logging.info("Calibrating color correction.")
     correction_target = cv2.cvtColor(np.asarray(image.copy()), cv2.COLOR_RGB2LAB)
