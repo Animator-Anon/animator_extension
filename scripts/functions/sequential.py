@@ -110,6 +110,8 @@ def main_process(myset: dict,
             if df.loc[frame_no, ['seed_str']][0] is None else float(df.loc[frame_no, ['seed_str']][0])
         # print(f"Frame:{frame_no} Seed:{ptxt.seed} Sub:{ptxt.subseed} Str:{ptxt.subseed_strength}")
 
+        ptxt.denoising_strength = df.loc[frame_no, ['denoise']][0]
+
         # Check if a source is set, and grab frame from there. If not, process.
         # TODO: Maybe figure out blending options for source frame and generated frame.
         if myset['source'] == 'video':

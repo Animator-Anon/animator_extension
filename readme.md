@@ -42,6 +42,7 @@ someone else's implementation to figure out why and don't want to steal their co
     12. [source](#source)
     13. [template](#template)
     14. [transform](#transform)
+    15. [perspective](#perspective)
 7. [Changelog](#changelog)
 
 # Major Features<a name="majorfeatures"></a>
@@ -281,6 +282,19 @@ Set the current transform.
 - x_shift: X shift value, in pixels per second.
 - y_shift: Y shift value, in pixels per second.
 - rotation: Rotation, in degrees per second.
+
+### perspective<a name="perspective"></a>
+Do a distortion/skew/perspective transform on the image. The shape defined below will be stretched to the current
+ pictures dimensions, and a sharpening filter will be applied.
+
+- Format: `time_s | perspective | x0 | y0 | x1 | y1 | x2 | y2 | x3 | y3 | unsharpen_percentage<br>`
+- time_s: Time in seconds from the start to make the change.
+- perspective: Command name.
+- x0, y0: Upper left corner 
+- x1, y1: Upper right corner 
+- x2, y2: Lower right corner 
+- x3, y3: Lower left corner 
+- unsharpen_percentage: Sharpen filter strength after the transform. 100 = 100%, no change. Try 120.
 
 ### seed<a name="seed"></a>
 Force a specific seed. It's technically a thing you can do, how usefull it is, is up to you to decide.

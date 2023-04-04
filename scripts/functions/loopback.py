@@ -172,14 +172,12 @@ def main_process(myset: dict,
 
             init_img = \
                 preprocessing.perspective_transform(init_img,
-                                                   [(df.loc[frame_no, ['px0']][0], df.loc[frame_no, ['py0']][0]),
-                                                    (df.loc[frame_no, ['px1']][0], df.loc[frame_no, ['py1']][0]),
-                                                    (df.loc[frame_no, ['px2']][0], df.loc[frame_no, ['py2']][0]),
-                                                    (df.loc[frame_no, ['px3']][0], df.loc[frame_no, ['py3']][0])],
-                                                   [(0, 0),
-                                                    (init_img.width, 0),
-                                                    (init_img.width, init_img.height),
-                                                    (0, init_img.height)])
+                                                    [(df.loc[frame_no, ['px0']][0], df.loc[frame_no, ['py0']][0]),
+                                                     (df.loc[frame_no, ['px1']][0], df.loc[frame_no, ['py1']][0]),
+                                                     (df.loc[frame_no, ['px2']][0], df.loc[frame_no, ['py2']][0]),
+                                                     (df.loc[frame_no, ['px3']][0], df.loc[frame_no, ['py3']][0])],
+                                                    [(0, 0), (0, 0), (0, 0), (0, 0)],
+                                                    df.loc[frame_no, ['punsharpen']][0])
 
         # Props
         if len(props) > 0:
@@ -209,6 +207,8 @@ def main_process(myset: dict,
         pimg.subseed_strength = None \
             if df.loc[frame_no, ['seed_str']][0] is None else float(df.loc[frame_no, ['seed_str']][0])
         # print(f"Frame:{frame_no} Seed:{pimg.seed} Sub:{pimg.subseed} Str:{pimg.subseed_strength}")
+
+        pimg.denoising_strength = df.loc[frame_no, ['denoise']][0]
 
         pimg.init_images = [init_img]
 

@@ -4,6 +4,7 @@ import numpy as np
 from skimage import exposure
 import cv2
 
+
 def add_simple_noise(img: Image, percent: float) -> Image:
     # Draw coloured circles randomly over the image. Lame, but for testing.
     # print("Noise function")
@@ -36,22 +37,29 @@ def transform_image(img: Image, rot: float, x: int, y: int, zoom: float) -> Imag
     return resimg
 
 
-def perspective_transform(image, src_points, dst_points):
+def perspective_transform(image: Image, src_points, dst_points, unsharpen):
     """
     Apply perspective transform on pillow image using transformation matrix.
     Args:
         image (PIL Image): Input image.
-        src_points (list): List of four source points.
-        dst_points (list): List of four destination points.
+        src_points (list): List of four delta points from source frame.
+        dst_points (list): List of four delta points from destination frame.
     Returns:
         PIL Image: Perspective transformed image.
     """
     # Convert the input image to OpenCV format.
     image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    ims = image.shape  # Not an image anymore, but an array
+
+    b = np.float32([[0, 0],
+                    [ims[0], 0],
+                    [ims[0], ims[1]],
+                    [0, ims[1]]
+                   ])
 
     # Calculate the perspective transformation matrix.
-    src_pts = np.float32(src_points)
-    dst_pts = np.float32(dst_points)
+    src_pts = np.float32(src_points) + b
+    dst_pts = np.float32(dst_points) + b
     matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
 
     # Apply the perspective transformation.
@@ -60,7 +68,7 @@ def perspective_transform(image, src_points, dst_points):
     # Convert the transformed image back to PIL format.
     timg = Image.fromarray(cv2.cvtColor(transformed, cv2.COLOR_BGR2RGB))
 
-    return timg.filter(ImageFilter.UnsharpMask(radius=2, percent=120))
+    return timg.filter(ImageFilter.UnsharpMask(radius=2, percent=int(unsharpen)))
 
 
 def old_setup_color_correction(image):

@@ -112,22 +112,11 @@ def get_pnginfo(filepath: str) -> Tuple[bool, str, str]:
 
 # Process the keyframe string and build the dataframe of all the changing parameters
 def process_keyframes(mysettings: dict) -> pd.DataFrame:
-
-    mysettings['keyframes'] = {}      # Dict of keyframes, where the index will be the frame it takes effect.
-    my_prompts = []     # List of tuple of prompts
-    my_seeds = {}       # dict of seeds
+    mysettings['keyframes'] = {}  # Dict of keyframes, where the index will be the frame it takes effect.
+    my_prompts = []  # List of tuple of prompts
+    my_seeds = {}  # dict of seeds
 
     frame_count = math.ceil(mysettings['fps'] * mysettings['total_time'])
-
-    try:
-        # Try and apply styles in addition to what was written into the template text boxes.
-        mysettings['tmpl_pos'] = shared.prompt_styles.apply_styles_to_prompt(mysettings['tmpl_pos'],
-                                                                             [mysettings['_style_pos'], 'None'])
-        mysettings['tmpl_neg'] = shared.prompt_styles.apply_negative_styles_to_prompt(mysettings['tmpl_neg'],
-                                                                                      [mysettings['_style_neg'],
-                                                                                       'None'])
-    except Exception as e:
-        print(f"Error: Failed to apply styles to templates: {e}")
 
     # Define the columns in the pandas dataframe that will hold and calculate all the changing values..
     variables = {'pos1': np.nan,
@@ -148,11 +137,11 @@ def process_keyframes(mysettings: dict) -> pd.DataFrame:
 
     # Preload the dataframe with some values, so they can be filled down correctly.
     df.loc[0, ['denoise', 'x_shift', 'y_shift', 'zoom', 'rotation', 'noise', 'cfg_scale',
-               'px0', 'py0', 'px1', 'py1', 'px2', 'py2', 'px3', 'py3' ]] = \
+               'px0', 'py0', 'px1', 'py1', 'px2', 'py2', 'px3', 'py3', 'punsharpen']] = \
         [mysettings['denoising_strength'],
          0.0, 0.0, 1.0, 0.0,
          mysettings['noise_strength'],
-         mysettings['cfg_scale'], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
+         mysettings['cfg_scale'], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
     # Iterate through the supplied keyframes, splitting by newline.
     for key_frame in mysettings['key_frames'].splitlines():
@@ -179,22 +168,23 @@ def process_keyframes(mysettings: dict) -> pd.DataFrame:
             # Time (s) | transform  | Zoom (/s) | X Shift (pix/s) | Y shift (pix/s) | Rotation (deg/s)
             df.loc[tmp_frame_no,
                    ['x_shift', 'y_shift', 'zoom', 'rotation']
-                   ] = [float(key_frame_parts[3]) / mysettings['fps'],
-                        float(key_frame_parts[4]) / mysettings['fps'],
-                        float(key_frame_parts[2]) ** (1.0 / mysettings['fps']),
-                        float(key_frame_parts[5]) / mysettings['fps']]
-        elif tmp_command == "perspective" and len(key_frame_parts) == 10:
-            # time_s | perspective | x0 | y0 | x1 | y1 | x2 | y2 | x3 | y3
+            ] = [float(key_frame_parts[3]) / mysettings['fps'],
+                 float(key_frame_parts[4]) / mysettings['fps'],
+                 float(key_frame_parts[2]) ** (1.0 / mysettings['fps']),
+                 float(key_frame_parts[5]) / mysettings['fps']]
+        elif tmp_command == "perspective" and len(key_frame_parts) == 11:
+            # time_s | perspective | x0 | y0 | x1 | y1 | x2 | y2 | x3 | y3 | unsharpen
             df.loc[tmp_frame_no,
-                   ['px0', 'py0', 'px1', 'py1', 'px2', 'py2', 'px3', 'py3']
-                   ] = [float(key_frame_parts[2]),
-                        float(key_frame_parts[3]),
-                        float(key_frame_parts[4]),
-                        float(key_frame_parts[5]),
-                        float(key_frame_parts[6]),
-                        float(key_frame_parts[7]),
-                        float(key_frame_parts[8]),
-                        float(key_frame_parts[9])]
+                   ['px0', 'py0', 'px1', 'py1', 'px2', 'py2', 'px3', 'py3', 'punsharpen']
+            ] = [float(key_frame_parts[2]),
+                 float(key_frame_parts[3]),
+                 float(key_frame_parts[4]),
+                 float(key_frame_parts[5]),
+                 float(key_frame_parts[6]),
+                 float(key_frame_parts[7]),
+                 float(key_frame_parts[8]),
+                 float(key_frame_parts[9]),
+                 float(key_frame_parts[10])]
         elif tmp_command == "denoise" and len(key_frame_parts) == 3:
             # Time (s) | denoise | denoise
             df.loc[tmp_frame_no, ['denoise']] = [float(key_frame_parts[2])]
@@ -237,13 +227,13 @@ def process_keyframes(mysettings: dict) -> pd.DataFrame:
                 if "\nNegative prompt:" in geninfo:
                     # print("DBG: found pos + neg")
                     tmp_posprompt = geninfo[:geninfo.find("\nNegative prompt:")]
-                    tmp_negprompt = geninfo[geninfo.find("\nNegative prompt:")+18:geninfo.rfind("\nSteps:")]
+                    tmp_negprompt = geninfo[geninfo.find("\nNegative prompt:") + 18:geninfo.rfind("\nSteps:")]
                 else:
                     # print("DBG: found pos")
                     tmp_posprompt = geninfo[:geninfo.find("\nSteps:")]
                     tmp_negprompt = ''
 
-                tmp_params = geninfo[geninfo.rfind("\nSteps:")+1:]
+                tmp_params = geninfo[geninfo.rfind("\nSteps:") + 1:]
                 tmp_seed = int(tmp_params[tmp_params.find('Seed: ') + 6:
                                           tmp_params.find(",", tmp_params.find('Seed: ') + 6)])
                 # print(f"Pos:[{tmp_posprompt}] Neg:[{tmp_negprompt}] Seed:[{tmp_seed}]")
@@ -268,6 +258,16 @@ def process_keyframes(mysettings: dict) -> pd.DataFrame:
                 else:
                     print(f'No images found, reverting back to img2img: {tmp_source_path}')
 
+    # Apply styles now. If template fields are blank but keyframes used, this should work fine.
+    try:
+        # Try and apply styles in addition to what was written into the template text boxes.
+        mysettings['tmpl_pos'] = shared.prompt_styles.apply_styles_to_prompt(mysettings['tmpl_pos'],
+                                                                             [mysettings['_style_pos']])
+        mysettings['tmpl_neg'] = shared.prompt_styles.apply_negative_styles_to_prompt(mysettings['tmpl_neg'],
+                                                                                      [mysettings['_style_neg']])
+    except Exception as e:
+        print(f"Error: Failed to apply styles to templates: {e}")
+
     # Sort the dict of prompts by frame number, and then populate the dataframe in a alternating fashion.
     # need to do this to ensure the prompts flow onto each other correctly.
     my_prompts = sorted(my_prompts)
@@ -290,54 +290,59 @@ def process_keyframes(mysettings: dict) -> pd.DataFrame:
     df.at[df.index[-1], 'prompt'] = 0
     df.loc[:, ['pos1', 'neg1', 'pos2', 'neg2']] = df.loc[:, ['pos1', 'neg1', 'pos2', 'neg2']].ffill()
 
-    # Fill out the seeds
+    ##
+    ## Seeds
+    ##
+    # Replace random numbers
     for x in my_seeds:
         if my_seeds[x] == -1:
             my_seeds[x] = int(random.randrange(4294967294))
 
+    # Check if there is no initial seed and grab the one from the UI.
     if 0 not in my_seeds:
-        print("DBG seed: No initial seed provided, adding UI one.")
+        if mysettings['debug']: print("DBG seed: No initial seed provided, adding UI one.")
         if mysettings['seed'] == -1:
             mysettings['seed'] = int(random.randrange(4294967294))
-            print("DBG seed: Generating random seed.")
+            if mysettings['debug']: print("DBG seed: Generating random seed.")
         my_seeds[0] = mysettings['seed']
 
-    print("DBG seed: Sorting list of seeds:")
-    print(my_seeds)
-    print("DBG seed: List of prompts:")
-    print(my_prompts)
+    if mysettings['debug']:
+        print(f"DBG seed: Sorting list of seeds:\n{my_seeds}")
+        print(f"DBG seed: List of prompts:\n{my_prompts}")
 
     if len(my_seeds) > 1:
         # Seed commands given.
         if mysettings['seed_travel']:
-            # print("DBG seed: More than 1 seed, seed travel enabled.")
+            if mysettings['debug']: print("DBG seed: More than 1 seed, seed travel enabled.")
             # Try to interpolate from seed -> sub-seed, by increasing sub-seed strength
             idxs = list(my_seeds.keys())
             idxs.sort()
-            for idx in range(len(idxs)-1):
-                df.loc[idxs[idx], ['seed_start', 'seed_end', 'seed_str']] = [str(my_seeds[idxs[idx]]),
-                                                                             str(my_seeds[idxs[idx + 1]]),
-                                                                             0]
+            for idx in range(len(idxs)):
+                if idx < len(my_seeds) - 1:
+                    df.loc[idxs[idx], ['seed_start', 'seed_end', 'seed_str']] = [str(my_seeds[idxs[idx]]),
+                                                                                 str(my_seeds[idxs[idx + 1]]),
+                                                                                 0]
                 if idx == len(my_seeds) - 2:
                     df.at[df.index[-1], 'seed_str'] = 1
                 if idx > 0:
                     df.loc[idxs[idx] - 1, 'seed_str'] = 1  # Ensure all values tend to one in the list
-            # print(df[['seed_start', 'seed_end', 'seed_str']])
+
+            if mysettings['debug']: print(f"DBG seed: Keyframes loaded:\n{df[['seed_start', 'seed_end', 'seed_str']]}")
             df.loc[:, ['seed_start', 'seed_end']] = df.loc[:, ['seed_start', 'seed_end']].ffill()
-            # print(df[['seed_start', 'seed_end', 'seed_str']])
+            if mysettings['debug']: print(f"DBG seed: Forward Fill:\n{df[['seed_start', 'seed_end', 'seed_str']]}")
         else:
-            # print("DBG seed: More than 1 seed, seed travel disabled.")
+            if mysettings['debug']: print("DBG seed: More than 1 seed, seed travel disabled.")
             # Just interpolate from one seed value to the next. experimental. Set sub-seed to None to disable.
             for idx in my_seeds:
                 df.loc[idx, 'seed_start'] = my_seeds[idx]
-            # print(df['seed_start'])
+            if mysettings['debug']: print(df['seed_start'])
             df.loc[:, 'seed_start'] = df.loc[:, 'seed_start'].interpolate(limit_direction='both').map(int)
-            # print(df['seed_start'])
+            if mysettings['debug']: print(df['seed_start'])
             df['seed_end'] = None
             df['seed_str'] = 0
     else:
-        # print("DBG seed: Only one seed, series fill.")
-        # Only initial seed given, load in initial value, series fill. Set sub-seed to None to disable.
+        if mysettings['debug']: print("DBG seed: Only one seed, series fill.")
+        # No seed keyframes, series fill the initial seed value. Set sub-seed to None to disable travelling.
         df.at[0, 'seed_start'] = my_seeds[0]
         df.at[df.index[-1], 'seed_start'] = my_seeds[0] + frame_count
         df.loc[:, 'seed_start'] = df.loc[:, 'seed_start'].interpolate(limit_direction='both').map(int)
@@ -354,13 +359,15 @@ def process_keyframes(mysettings: dict) -> pd.DataFrame:
         else:
             df.loc[:, name] = df.loc[:, name].interpolate(limit_direction='both')
 
+    if mysettings['debug']: print(f"DBG seed: Post interpolation:\n{df[['seed_start', 'seed_end', 'seed_str']]}")
+
     if mysettings['prompt_interpolation']:
         # Check if templates are filled in. If not, try grab prompts at top (i.e. image sent from png info)
         if len(mysettings['tmpl_pos']) == 0:
             df['pos_prompt'] = df['pos1'].map(str) + ':' + df['prompt'].map(str) + ' AND ' + \
                                df['pos2'].map(str) + ':' + (1.0 - df['prompt']).map(str)
         else:
-            df['pos_prompt'] = mysettings['tmpl_pos'] + ',' + df['pos1'].map(str) + ':' + df['prompt'].map(str) +\
+            df['pos_prompt'] = mysettings['tmpl_pos'] + ',' + df['pos1'].map(str) + ':' + df['prompt'].map(str) + \
                                ' AND ' + mysettings['tmpl_pos'] + ',' + df['pos2'].map(str) + ':' + \
                                (1.0 - df['prompt']).map(str)
         if len(mysettings['tmpl_neg']) == 0:

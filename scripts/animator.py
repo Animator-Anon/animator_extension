@@ -254,7 +254,7 @@ def ui_block_keyframes():
                     "time_s | denoise | denoise_value<br>"
                     "time_s | cfg_scale | cfg_scale_value<br>"
                     "time_s | transform | zoom | x_shift | y_shift | rotation<br>"
-                    "time_s | perspective | x0 | y0 | x1 | y1 | x2 | y2 | x3 | y3<br>"
+                    "time_s | perspective | x0 | y0 | x1 | y1 | x2 | y2 | x3 | y3 | unsharpen_percentage<br>"
                     "time_s | noise | added_noise_strength<br>"
                     "time_s | set_text | textblock_name | text_prompt | x_pos | y_pos | width | height | fore_color |"
                     " back_color | font_name<br> "

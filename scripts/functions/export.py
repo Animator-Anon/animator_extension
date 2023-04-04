@@ -124,8 +124,11 @@ def make_gif(filepath: str, filename: str, fps: float, create_vid: bool, create_
     cmd[5] = os.path.join(filepath, in_filename)
     cmd[6] = os.path.join(filepath, out_filename)
     # create output if requested
-    if create_vid:
-        subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        if create_vid:
+            subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except (OSError, IOError) as e:
+        print("Error calling FFMPEG to render video. Is it installed and findable?")
 
 
 def make_webm(filepath: str, filename: str, fps: float, create_vid: bool, create_bat: bool):
@@ -150,8 +153,11 @@ def make_webm(filepath: str, filename: str, fps: float, create_vid: bool, create
     cmd[5] = os.path.join(filepath, in_filename)
     cmd[10] = os.path.join(filepath, out_filename)
 
-    if create_vid:
-        subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        if create_vid:
+            subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except (OSError, IOError) as e:
+        print("Error calling FFMPEG to render video. Is it installed and findable?")
 
 
 def make_mp4(filepath: str, filename: str, fps: float, create_vid: bool, create_bat: bool):
@@ -180,5 +186,8 @@ def make_mp4(filepath: str, filename: str, fps: float, create_vid: bool, create_
     cmd[5] = os.path.join(filepath, in_filename)
     cmd[16] = os.path.join(filepath, out_filename)
 
-    if create_vid:
-        subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        if create_vid:
+            subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except (OSError, IOError) as e:
+        print("Error calling FFMPEG to render video. Is it installed and findable?")
