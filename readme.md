@@ -288,7 +288,7 @@ Force a specific seed. It's technically a thing you can do, how usefull it is, i
 - Format: `time_s | seed | new_seed_int`
 - time_s: Time in seconds from the start to make the change.
 - seed: Command name.
-- denoise_value: New seed value.
+- new_seed_int: New seed value, integer. I don't think string seeds will work.
 
 ### denoise<a name="denoise"></a>
 Set the denoise strength.
