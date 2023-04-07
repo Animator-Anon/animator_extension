@@ -227,6 +227,7 @@ the next keyframe that has a prompt.
 
 # Keyframes:<a name="keyframes"></a>
 Key frames have been broken down into individual commands, since the old keyframe was blowing out.
+Lines starting with a # are ignored, can be used as comments, or to disable a keyframe.
 Commands:
 
 ### source<a name="source"></a>

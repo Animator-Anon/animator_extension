@@ -32,6 +32,7 @@ def myprocess(*args, **kwargs):
     _noise_strength
     _seed
     _seed_travel
+    _restore_faces
     _initial_img
     _loopback_mode
     _prompt_interpolation
@@ -65,17 +66,18 @@ def myprocess(*args, **kwargs):
              'noise_strength': args[i + 11],  # float(_noise_strength),
              'seed': args[i + 12],  # int(_seed),
              'seed_travel': args[i + 13],  # bool(_seed_travel),
+             'restore_faces': args[i + 14],  # bool(_restore_faces),
 
-             'loopback': args[i + 15],  # bool(_loopback_mode),
-             'prompt_interpolation': args[i + 16],  # bool(_prompt_interpolation),
-             'tmpl_pos': args[i + 17],  # str(_tmpl_pos).strip(),
-             'tmpl_neg': args[i + 18],  # str(_tmpl_neg).strip(),
-             'key_frames': args[i + 19],  # str(_key_frames).strip(),
-             'vid_gif': args[i + 20],  # bool(_vid_gif),
-             'vid_mp4': args[i + 21],  # bool(_vid_mp4),
-             'vid_webm': args[i + 22],  # bool(_vid_webm),
-             '_style_pos': args[i + 23],  # str(_style_pos).strip(),
-             '_style_neg': args[i + 24],  # str(_style_neg).strip(),
+             'loopback': args[i + 16],  # bool(_loopback_mode),
+             'prompt_interpolation': args[i + 17],  # bool(_prompt_interpolation),
+             'tmpl_pos': args[i + 18],  # str(_tmpl_pos).strip(),
+             'tmpl_neg': args[i + 19],  # str(_tmpl_neg).strip(),
+             'key_frames': args[i + 20],  # str(_key_frames).strip(),
+             'vid_gif': args[i + 21],  # bool(_vid_gif),
+             'vid_mp4': args[i + 22],  # bool(_vid_mp4),
+             'vid_webm': args[i + 23],  # bool(_vid_webm),
+             '_style_pos': args[i + 24],  # str(_style_pos).strip(),
+             '_style_neg': args[i + 25],  # str(_style_neg).strip(),
              'source': "",
              'debug': os.path.exists('debug.txt')}
 
@@ -94,7 +96,7 @@ def myprocess(*args, **kwargs):
     myset['output_path'] = output_parent_folder
 
     # Have to add the initial picture later on as it doesn't serialise well.
-    myset['initial_img'] = args[i + 14]  # _initial_img
+    myset['initial_img'] = args[i + 15]  # _initial_img
 
     # Prepare the processing objects with default values.
     ptxt, pimg = prepwork.setup_processors(myset)
@@ -119,7 +121,7 @@ def myprocess(*args, **kwargs):
 
     # Save the parameters to a file.
     settings_filename = os.path.join(myset['output_path'], "settings.txt")
-    myset['initial_img'] = None # No need to save the initial image
+    myset['initial_img'] = None  # No need to save the initial image
     with open(settings_filename, "w+", encoding="utf-8") as f:
         json.dump(myset, f, ensure_ascii=False, indent=4)
 
@@ -139,7 +141,8 @@ def ui_block_generation():
             gr.HTML("<p>These parameters mirror those in txt2img and img2img mode. They are used "
                     "to create the initial image in loopback mode.<br>"
                     "<b>Seed Travel</b>: Allow use of sub seeds to 'smoothly' change from one seed to the next. Only "
-                    "makes sense to use if you manually have some seeds set in the keyframes."
+                    "makes sense to use if you manually have some seeds set in the keyframes.<br>"
+                    "<b>Restore Faces</b>: Same as the checkbox in the main tabs, tries to fix faces... "
                     "</p>")
         steps = gr.Slider(minimum=1, maximum=150, step=1, label="Sampling Steps", value=20)
         from modules.sd_samplers import samplers_for_img2img
@@ -161,13 +164,17 @@ def ui_block_generation():
             seed_travel = gr.Checkbox(label='Seed Travel', value=False)
 
         with gr.Row():
+            restore_faces = gr.Checkbox(label='Restore Faces', value=False)
+
+        with gr.Row():
             with gr.Accordion("Initial Image", open=False):
                 initial_img = gr.inputs.Image(label='Upload starting image',
                                               image_mode='RGB',
                                               type='pil',
                                               optional=True)
 
-    return steps, sampler_index, width, height, cfg_scale, denoising_strength, seed, seed_travel, initial_img
+    return steps, sampler_index, width, height, cfg_scale, denoising_strength, seed, seed_travel, initial_img, \
+           restore_faces
 
 
 def ui_block_animation():
@@ -265,9 +272,9 @@ def ui_block_keyframes():
                     "time_s | col_set<br>"
                     "time_s | col_clear<br>"
                     "time_s | model | " + ", ".join(
-                                                    sorted(
-                                                        [x.model_name for x in sd_models.checkpoints_list.values()]
-                                                    )) + "</p>")
+                sorted(
+                    [x.model_name for x in sd_models.checkpoints_list.values()]
+                )) + "</p>")
 
         return gr.Textbox(label="Keyframes:", lines=5, value="")
 
@@ -307,10 +314,10 @@ def on_ui_tabs():
             # left Column
             with gr.Column():
                 with gr.Tab("Generation"):
-                    steps, sampler_index, width, height, cfg_scale, denoising_strength, seed, seed_travel, image_list =\
-                        ui_block_generation()
+                    steps, sampler_index, width, height, cfg_scale, denoising_strength, seed, seed_travel, image_list, \
+                        restore_faces = ui_block_generation()
 
-                    total_time, fps, smoothing, film_interpolation, add_noise, noise_strength, loopback_mode =\
+                    total_time, fps, smoothing, film_interpolation, add_noise, noise_strength, loopback_mode = \
                         ui_block_animation()
 
                     prompt_interpolation, tmpl_pos, style_pos, tmpl_neg, style_neg = ui_block_processing()
@@ -338,12 +345,12 @@ def on_ui_tabs():
                        _js="start_animator",
                        inputs=[aa_htmlinfo, steps, sampler_index, width, height, cfg_scale, denoising_strength,
                                total_time, fps, smoothing, film_interpolation, add_noise, noise_strength, seed,
-                               seed_travel, image_list, loopback_mode, prompt_interpolation,
+                               seed_travel, restore_faces, image_list, loopback_mode, prompt_interpolation,
                                tmpl_pos, tmpl_neg, key_frames, vid_gif, vid_mp4, vid_webm, style_pos, style_neg],
                        outputs=[aa_gallery, aa_htmlinfo])
 
-        btn_stop.click(fn=lambda: shared.state.interrupt()) #,
-                       #_js="reenable_animator")
+        btn_stop.click(fn=lambda: shared.state.interrupt())  # ,
+        # _js="reenable_animator")
 
     return (animator_tabs, "Animator", "animator_extension"),
 

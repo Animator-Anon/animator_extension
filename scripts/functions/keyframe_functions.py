@@ -113,6 +113,7 @@ def get_pnginfo(filepath: str) -> Tuple[bool, str, str]:
 # Process the keyframe string and build the dataframe of all the changing parameters
 def process_keyframes(mysettings: dict) -> pd.DataFrame:
     mysettings['keyframes'] = {}  # Dict of keyframes, where the index will be the frame it takes effect.
+    mysettings['debug'] = False
     my_prompts = []  # List of tuple of prompts
     my_seeds = {}  # dict of seeds
 
@@ -172,6 +173,9 @@ def process_keyframes(mysettings: dict) -> pd.DataFrame:
                  float(key_frame_parts[4]) / mysettings['fps'],
                  float(key_frame_parts[2]) ** (1.0 / mysettings['fps']),
                  float(key_frame_parts[5]) / mysettings['fps']]
+        elif tmp_command == "debug" and len(key_frame_parts) == 3:
+            # Time (s) | debug | boolean
+            mysettings['debug'] = True
         elif tmp_command == "perspective" and len(key_frame_parts) == 11:
             # time_s | perspective | x0 | y0 | x1 | y1 | x2 | y2 | x3 | y3 | unsharpen
             df.loc[tmp_frame_no,
@@ -258,6 +262,9 @@ def process_keyframes(mysettings: dict) -> pd.DataFrame:
                 else:
                     print(f'No images found, reverting back to img2img: {tmp_source_path}')
 
+    #
+    # Prompts
+    #
     # Apply styles now. If template fields are blank but keyframes used, this should work fine.
     try:
         # Try and apply styles in addition to what was written into the template text boxes.
@@ -271,6 +278,9 @@ def process_keyframes(mysettings: dict) -> pd.DataFrame:
     # Sort the dict of prompts by frame number, and then populate the dataframe in a alternating fashion.
     # need to do this to ensure the prompts flow onto each other correctly.
     my_prompts = sorted(my_prompts)
+    if mysettings['debug']:
+        print("DBG prompts:")
+        print(my_prompts)
 
     # Special case if no prompts supplied.
     if len(my_prompts) == 0:
@@ -278,17 +288,27 @@ def process_keyframes(mysettings: dict) -> pd.DataFrame:
     elif len(my_prompts) == 1:
         df.loc[0, ['pos1', 'neg1', 'pos2', 'neg2', 'prompt']] = [my_prompts[0][1], my_prompts[0][2], "", "", 1.0]
     else:
-        for x in range(len(my_prompts) - 1):
-            df.loc[my_prompts[x][0], ['pos1', 'neg1', 'pos2', 'neg2', 'prompt']] = [my_prompts[x][1],
-                                                                                    my_prompts[x][2],
-                                                                                    my_prompts[x + 1][1],
-                                                                                    my_prompts[x + 1][2],
-                                                                                    1]
+        for x in range(len(my_prompts)):
+            if x < len(my_prompts) - 1:
+                df.loc[my_prompts[x][0], ['pos1', 'neg1', 'pos2', 'neg2', 'prompt']] = [my_prompts[x][1],
+                                                                                        my_prompts[x][2],
+                                                                                        my_prompts[x + 1][1],
+                                                                                        my_prompts[x + 1][2],
+                                                                                        1]
+            else:
+                df.loc[my_prompts[x][0], ['pos1', 'neg1', 'pos2', 'neg2', 'prompt']] = [my_prompts[x][1],
+                                                                                        my_prompts[x][2],
+                                                                                        my_prompts[x][1],
+                                                                                        my_prompts[x][2],
+                                                                                        1]
             if x > 0:
                 df.loc[my_prompts[x][0] - 1, 'prompt'] = 0
 
     df.at[df.index[-1], 'prompt'] = 0
     df.loc[:, ['pos1', 'neg1', 'pos2', 'neg2']] = df.loc[:, ['pos1', 'neg1', 'pos2', 'neg2']].ffill()
+    if mysettings['debug']:
+        print("DBG prompts:")
+        print(df[['pos1', 'neg1', 'pos2', 'neg2', 'prompt']])
 
     ##
     ## Seeds
@@ -367,7 +387,7 @@ def process_keyframes(mysettings: dict) -> pd.DataFrame:
             df['pos_prompt'] = df['pos1'].map(str) + ':' + df['prompt'].map(str) + ' AND ' + \
                                df['pos2'].map(str) + ':' + (1.0 - df['prompt']).map(str)
         else:
-            df['pos_prompt'] = mysettings['tmpl_pos'] + ',' + df['pos1'].map(str) + ':' + df['prompt'].map(str) + \
+            df['pos_prompt'] = mysettings['tmpl_pos'] + ', ' + df['pos1'].map(str) + ':' + df['prompt'].map(str) + \
                                ' AND ' + mysettings['tmpl_pos'] + ',' + df['pos2'].map(str) + ':' + \
                                (1.0 - df['prompt']).map(str)
         if len(mysettings['tmpl_neg']) == 0:
@@ -375,17 +395,21 @@ def process_keyframes(mysettings: dict) -> pd.DataFrame:
                                df['neg2'].map(str) + ':' + (1.0 - df['prompt']).map(str)
         else:
             df['neg_prompt'] = mysettings['tmpl_neg'] + ',' + df['neg1'].map(str) + ':' + df['prompt'].map(str) + \
-                               ' AND ' + mysettings['tmpl_neg'] + ',' + df['neg2'].map(str) + ':' + \
+                               ' AND ' + mysettings['tmpl_neg'] + ', ' + df['neg2'].map(str) + ':' + \
                                (1.0 - df['prompt']).map(str)
     else:
         if len(mysettings['tmpl_pos']) == 0:
             df['pos_prompt'] = df['pos1'].map(str)
         else:
-            df['pos_prompt'] = mysettings['tmpl_pos'] + ',' + df['pos1'].map(str)
+            df['pos_prompt'] = mysettings['tmpl_pos'] + ', ' + df['pos1'].map(str)
         if len(mysettings['tmpl_neg']) == 0:
             df['neg_prompt'] = df['neg1'].map(str)
         else:
-            df['neg_prompt'] = mysettings['tmpl_neg'] + ',' + df['neg1'].map(str)
+            df['neg_prompt'] = mysettings['tmpl_neg'] + ', ' + df['neg1'].map(str)
+
+    if mysettings['debug']:
+        print("DBG post interpolation:")
+        print(df[['pos_prompt', 'neg_prompt', 'prompt']])
 
     csv_filename = os.path.join(mysettings['output_path'], "keyframes.csv")
     df.to_csv(csv_filename)
