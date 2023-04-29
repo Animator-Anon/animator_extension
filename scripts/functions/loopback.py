@@ -130,8 +130,11 @@ def main_process(myset: dict,
                 init_img = init_processed.images[0]
             else:
                 init_img = myset['initial_img']
+                pimg.mask = myset['mask']
+
                 if init_img.size != (myset['width'], myset['height']):
                     init_img = init_img.resize((myset['width'], myset['height']), Image.Resampling.LANCZOS)
+                    pimg.mask = pimg.mask.resize((myset['width'], myset['height']), Image.Resampling.LANCZOS)
         else:
             init_img = last_frame
 
@@ -195,7 +198,7 @@ def main_process(myset: dict,
         #############################
         # print("Animator: Process Source Frame.")
         if apply_colour_corrections:
-            init_img = preprocessing.old_apply_color_correction(initial_color_corrections, init_img)
+            init_img = preprocessing.old_apply_color_correction(initial_color_corrections, init_img, myset['mask'])
 
         # Set prompts
         pimg.prompt = str(df.loc[frame_no, ['pos_prompt']][0])

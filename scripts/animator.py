@@ -9,17 +9,21 @@ import json
 import os
 import time
 import gradio as gr
+import torch
+import numpy as np
 from scripts.functions import prepwork, sequential, loopback, export
 from modules import script_callbacks, shared, sd_models, scripts, ui_common
 from modules.call_queue import wrap_gradio_gpu_call
 from modules.shared import cmd_opts
 from modules.ui import setup_progressbar
+from PIL import Image, ImageOps, ImageFilter, ImageEnhance, ImageChops
 
 
 def myprocess(*args, **kwargs):
     """
     _steps
-    _sampler_index
+    _img_sampler_index
+    _txt_sampler_index
     _width
     _height
     _cfg_scale
@@ -51,35 +55,52 @@ def myprocess(*args, **kwargs):
     if len(args) > 0 and type(args[i]) == str and args[i][0:5] == "task(" and args[i][-1] == ")":
         i += 1
 
+    myset = {}
     # Build a dict of the settings, so we can easily pass to sub functions.
-    myset = {'steps': args[i + 0],  # int(_steps),
-             'sampler_index': args[i + 1],  # int(_sampler_index),
-             'width': args[i + 2],  # int(_width),
-             'height': args[i + 3],  # int(_height),
-             'cfg_scale': args[i + 4],  # float(_cfg_scale),
-             'denoising_strength': args[i + 5],  # float(_denoising_strength),
-             'total_time': args[i + 6],  # float(_total_time),
-             'fps': args[i + 7],  # float(_fps),
-             'smoothing': args[i + 8],  # int(_smoothing),
-             'film_interpolation': args[i + 9],  # int(_film_interpolation),
-             'add_noise': args[i + 10],  # _add_noise,
-             'noise_strength': args[i + 11],  # float(_noise_strength),
-             'seed': args[i + 12],  # int(_seed),
-             'seed_travel': args[i + 13],  # bool(_seed_travel),
-             'restore_faces': args[i + 14],  # bool(_restore_faces),
+    myset['steps'] = args[i]; i+=1                  # int(_steps),
+    myset['txt_sampler_name'] = args[i]; i+=1      # int(_sampler_index)
+    #myset['img_sampler_index'] = args[i]            # Need to find corresponding img2img sampler...
 
-             'loopback': args[i + 16],  # bool(_loopback_mode),
-             'prompt_interpolation': args[i + 17],  # bool(_prompt_interpolation),
-             'tmpl_pos': args[i + 18],  # str(_tmpl_pos).strip(),
-             'tmpl_neg': args[i + 19],  # str(_tmpl_neg).strip(),
-             'key_frames': args[i + 20],  # str(_key_frames).strip(),
-             'vid_gif': args[i + 21],  # bool(_vid_gif),
-             'vid_mp4': args[i + 22],  # bool(_vid_mp4),
-             'vid_webm': args[i + 23],  # bool(_vid_webm),
-             '_style_pos': args[i + 24],  # str(_style_pos).strip(),
-             '_style_neg': args[i + 25],  # str(_style_neg).strip(),
-             'source': "",
-             'debug': os.path.exists('debug.txt')}
+    from modules.sd_samplers import samplers, samplers_for_img2img
+    txtsamplername = myset['txt_sampler_name']
+    imgsampler = 0
+    for x in range(len(samplers_for_img2img)):
+        if samplers[x].name == txtsamplername:
+            imgsampler = x
+            break
+    myset['img_sampler_name'] = samplers_for_img2img[imgsampler].name
+
+    if (myset['img_sampler_name'] != myset['txt_sampler_name']):
+        print(f"Warning: Different samplers ({myset['txt_sampler_name']}, {myset['img_sampler_name']}) have been "
+              f"selected for txt2img and img2img. You probably selected one that was not allowed for img2img, so a "
+              f"default was substituted.")
+
+    myset['width'] = args[i]; i+=1                  # int(_width),
+    myset['height'] = args[i]; i+=1                 # int(_height),
+    myset['cfg_scale'] = args[i]; i+=1              # int(_cfg_scale),
+    myset['denoising_strength'] = args[i]; i+=1     # float(_denoising_strength),
+    myset['total_time'] = args[i]; i+=1             # float(_total_time),
+    myset['fps'] = args[i]; i+=1                    # float(_fps),
+    myset['smoothing'] = args[i]; i+=1              # int(_smoothing),
+    myset['film_interpolation'] = args[i]; i+=1     # int(_film_interpolation),
+    myset['add_noise'] = args[i]; i+=1              # _add_noise
+    myset['noise_strength'] = args[i]; i+=1         # int(_noise_strength),
+    myset['seed'] = args[i]; i+=1                   # int(_seed),
+    myset['seed_travel'] = args[i]; i+=1            # bool(_seed_travel),
+    myset['restore_faces'] = args[i]; i+=1          # bool(_restore_faces),
+    myset['initial_img'] = args[i]; i+=1            # initial images
+    myset['loopback'] = args[i]; i+=1               # bool(_loopback_mode),
+    myset['prompt_interpolation'] = args[i]; i+=1   # bool(_prompt_interpolation),
+    myset['tmpl_pos'] = args[i]; i+=1               # str(_tmpl_pos).strip(),
+    myset['tmpl_neg'] = args[i]; i+=1               # str(_tmpl_neg).strip(),
+    myset['key_frames'] = args[i]; i+=1             # str(_key_frames).strip(),
+    myset['vid_gif'] = args[i]; i+=1                # bool(_vid_gif),
+    myset['vid_mp4'] = args[i]; i+=1                # bool(_vid_mp4),
+    myset['vid_webm'] = args[i]; i+=1               # bool(_vid_webm),
+    myset['_style_pos'] = args[i]; i+=1             # str(_style_pos).strip(),
+    myset['_style_neg'] = args[i]; i+=1             # str(_style_neg).strip(),
+    myset['source'] = ""
+    myset['debug'] = os.path.exists('debug.txt')
 
     print("Script Path (myprocess): ", scripts.basedir())
 
@@ -95,8 +116,25 @@ def myprocess(*args, **kwargs):
         os.makedirs(output_parent_folder)
     myset['output_path'] = output_parent_folder
 
-    # Have to add the initial picture later on as it doesn't serialise well.
-    myset['initial_img'] = args[i + 15]  # _initial_img
+    if myset['initial_img']:
+        image, mask = myset['initial_img']["image"], myset['initial_img']["mask"]
+
+        # Check is mask has any data. If it does, inpant. If not, treat it like normal initial img.
+        pixels = mask.convert('L').getdata()
+        nMask = 0
+        for pixel in pixels:
+            nMask += pixel
+        n = len(pixels)
+
+        if nMask == 0:
+            myset['mask'] = None
+        else:
+            alpha_mask = ImageOps.invert(image.split()[-1]).convert('L').point(lambda x: 255 if x > 0 else 0, mode='1')
+            myset['mask'] = ImageChops.lighter(alpha_mask, mask.convert('L')).convert('L')
+        myset['initial_img'] = image.convert("RGB")
+    else:
+        myset['initial_img'] = None
+        myset['mask'] = None
 
     # Prepare the processing objects with default values.
     ptxt, pimg = prepwork.setup_processors(myset)
@@ -122,6 +160,7 @@ def myprocess(*args, **kwargs):
     # Save the parameters to a file.
     settings_filename = os.path.join(myset['output_path'], "settings.txt")
     myset['initial_img'] = None  # No need to save the initial image
+
     with open(settings_filename, "w+", encoding="utf-8") as f:
         json.dump(myset, f, ensure_ascii=False, indent=4)
 
@@ -140,15 +179,17 @@ def ui_block_generation():
         with gr.Accordion("Generation Parameters", open=False):
             gr.HTML("<p>These parameters mirror those in txt2img and img2img mode. They are used "
                     "to create the initial image in loopback mode.<br>"
+                    "<b>Samplers</b>: Pick a sampler that will be used for txt2img and img2img processing. Note that "
+                    "not all samplers as available for img2img, the default one will be substituted if needed.<br>"
                     "<b>Seed Travel</b>: Allow use of sub seeds to 'smoothly' change from one seed to the next. Only "
                     "makes sense to use if you manually have some seeds set in the keyframes.<br>"
-                    "<b>Restore Faces</b>: Same as the checkbox in the main tabs, tries to fix faces... "
+                    "<b>Restore Faces</b>: Same as the checkbox in the main tabs, tries to create realistic faces... "
                     "</p>")
         steps = gr.Slider(minimum=1, maximum=150, step=1, label="Sampling Steps", value=20)
-        from modules.sd_samplers import samplers_for_img2img
-        sampler_index = gr.Radio(label='Sampling method',
-                                 choices=[x.name for x in samplers_for_img2img],
-                                 value=samplers_for_img2img[0].name, type="index")
+        from modules.sd_samplers import samplers, samplers_for_img2img
+        sampler_name = gr.Radio(label='Sampling method',
+                                 choices=[x.name for x in samplers],
+                                 value=samplers[0].name, type="value")
 
         with gr.Group():
             with gr.Row():
@@ -168,12 +209,16 @@ def ui_block_generation():
 
         with gr.Row():
             with gr.Accordion("Initial Image", open=False):
-                initial_img = gr.inputs.Image(label='Upload starting image',
-                                              image_mode='RGB',
-                                              type='pil',
-                                              optional=True)
+                initial_img = gr.Image(label="Image for inpainting with mask",
+                                       show_label=False,
+                                       elem_id="aa_img2maskimg",
+                                       source="upload",
+                                       interactive=True,
+                                       type="pil",
+                                       tool="sketch",
+                                       image_mode="RGBA")  # .style(height=512)
 
-    return steps, sampler_index, width, height, cfg_scale, denoising_strength, seed, seed_travel, initial_img, \
+    return steps, sampler_name, width, height, cfg_scale, denoising_strength, seed, seed_travel, initial_img, \
            restore_faces
 
 
@@ -314,7 +359,7 @@ def on_ui_tabs():
             # left Column
             with gr.Column():
                 with gr.Tab("Generation"):
-                    steps, sampler_index, width, height, cfg_scale, denoising_strength, seed, seed_travel, image_list, \
+                    steps, sampler_name, width, height, cfg_scale, denoising_strength, seed, seed_travel, image_list, \
                         restore_faces = ui_block_generation()
 
                     total_time, fps, smoothing, film_interpolation, add_noise, noise_strength, loopback_mode = \
@@ -343,7 +388,7 @@ def on_ui_tabs():
 
         btn_proc.click(fn=wrap_gradio_gpu_call(myprocess, extra_outputs=[gr.update()]),
                        _js="start_animator",
-                       inputs=[aa_htmlinfo, steps, sampler_index, width, height, cfg_scale, denoising_strength,
+                       inputs=[aa_htmlinfo, steps, sampler_name, width, height, cfg_scale, denoising_strength,
                                total_time, fps, smoothing, film_interpolation, add_noise, noise_strength, seed,
                                seed_travel, restore_faces, image_list, loopback_mode, prompt_interpolation,
                                tmpl_pos, tmpl_neg, key_frames, vid_gif, vid_mp4, vid_webm, style_pos, style_neg],

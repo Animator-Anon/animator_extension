@@ -1,5 +1,5 @@
 import random
-from PIL import Image, ImageFilter, ImageDraw
+from PIL import Image, ImageFilter, ImageDraw, ImageOps
 import numpy as np
 from skimage import exposure
 import cv2
@@ -77,18 +77,39 @@ def old_setup_color_correction(image):
     return correction_target
 
 
-def old_apply_color_correction(correction, original_image):
+def old_apply_color_correction(correction, original_image: Image, mask: Image):
     # logging.info("Applying color correction.")
-    image = Image.fromarray(cv2.cvtColor(exposure.match_histograms(
-        cv2.cvtColor(
-            np.asarray(original_image),
-            cv2.COLOR_RGB2LAB
-        ),
-        correction,
-        channel_axis=2
-    ), cv2.COLOR_LAB2RGB).astype("uint8"))
 
-    # This line breaks it
-    # image = blendLayers(image, original_image, BlendType.LUMINOSITY)
+    if mask:
+        # Invert mask, use it to paste over the top after the coorection..
+        backup_image = original_image.copy()
+
+        image = Image.fromarray(cv2.cvtColor(exposure.match_histograms(
+            cv2.cvtColor(
+                np.asarray(original_image),
+                cv2.COLOR_RGB2LAB
+            ),
+            correction,
+            channel_axis=2
+        ), cv2.COLOR_LAB2RGB).astype("uint8"))
+
+        # Convert grayscale image back to RGB
+        #new_mask = mask.convert('RGB')
+
+        # Combine the modified image with the backup using the alpha mask
+        image = Image.composite(backup_image, image, ImageOps.invert(mask))
+
+    else:
+        image = Image.fromarray(cv2.cvtColor(exposure.match_histograms(
+            cv2.cvtColor(
+                np.asarray(original_image),
+                cv2.COLOR_RGB2LAB
+            ),
+            correction,
+            channel_axis=2
+        ), cv2.COLOR_LAB2RGB).astype("uint8"))
+
+        # This line breaks it
+        # image = blendLayers(image, original_image, BlendType.LUMINOSITY)
 
     return image

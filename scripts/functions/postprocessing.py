@@ -80,7 +80,7 @@ def render_text_block(img: Image, text_blocks: dict) -> Image:
     return img
 
 
-def morph(img1: Image, img2: Image, count: int) -> list:
+def morph2(img1: Image, img2: Image, count: int) -> list:
     """
     count=4
     img1:0
@@ -98,5 +98,26 @@ def morph(img1: Image, img2: Image, count: int) -> list:
         print(f"x: {x}")
         arr1 += diff
         img_list.append(Image.fromarray(arr1.astype('uint8'), 'RGBA'))
+
+    return img_list
+
+
+def morph(img1: Image, img2: Image, count: int) -> list:
+    # Convert images to YCbCr color space and convert to NumPy arrays
+    arr1 = np.array(img1.convert('YCbCr')).astype('float')
+    arr2 = np.array(img2.convert('YCbCr')).astype('float')
+
+    # Compute the difference between the images
+    diff = (arr2 - arr1) / (count + 1)
+
+    img_list = []
+    for x in range(0, count):
+        # Update the YCbCr arrays
+        arr1 += diff
+
+        # Convert the YCbCr arrays back to the RGB color space
+        img = Image.fromarray(arr1.astype('uint8'), 'YCbCr').convert('RGBA')
+
+        img_list.append(img)
 
     return img_list
