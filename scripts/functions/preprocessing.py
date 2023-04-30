@@ -91,13 +91,17 @@ def old_apply_color_correction(correction, original_image: Image, mask: Image):
             ),
             correction,
             channel_axis=2
-        ), cv2.COLOR_LAB2RGB).astype("uint8"))
+        ), cv2.COLOR_LAB2RGB).astype("uint8")).convert('RGBA')
 
         # Convert grayscale image back to RGB
         #new_mask = mask.convert('RGB')
 
+        #print(f"\nold_apply_color_correction backup_image:{backup_image.mode}, {backup_image.size}")
+        #print(f"\nold_apply_color_correction image:{image.mode}, {image.size}")
+        #print(f"\nold_apply_color_correction mask:{mask.mode}, {mask.size}")
+
         # Combine the modified image with the backup using the alpha mask
-        image = Image.composite(backup_image, image, ImageOps.invert(mask))
+        image = Image.composite(image, backup_image, mask.resize(image.size, Image.Resampling.LANCZOS))
 
     else:
         image = Image.fromarray(cv2.cvtColor(exposure.match_histograms(
@@ -107,7 +111,7 @@ def old_apply_color_correction(correction, original_image: Image, mask: Image):
             ),
             correction,
             channel_axis=2
-        ), cv2.COLOR_LAB2RGB).astype("uint8"))
+        ), cv2.COLOR_LAB2RGB).astype("uint8")).convert('RGBA')
 
         # This line breaks it
         # image = blendLayers(image, original_image, BlendType.LUMINOSITY)

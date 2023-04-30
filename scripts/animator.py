@@ -118,6 +118,8 @@ def myprocess(*args, **kwargs):
 
     if myset['initial_img']:
         image, mask = myset['initial_img']["image"], myset['initial_img']["mask"]
+        #print(f"\nif myset['initial_img']: image:{image.mode}, {image.size}")
+        #print(f"\nif myset['initial_img']: mask:{mask.mode}, {mask.size}")
 
         # Check is mask has any data. If it does, inpant. If not, treat it like normal initial img.
         pixels = mask.convert('L').getdata()
@@ -131,7 +133,10 @@ def myprocess(*args, **kwargs):
         else:
             alpha_mask = ImageOps.invert(image.split()[-1]).convert('L').point(lambda x: 255 if x > 0 else 0, mode='1')
             myset['mask'] = ImageChops.lighter(alpha_mask, mask.convert('L')).convert('L')
+            #print(f"\nif myset['initial_img']: mask:{myset['mask'].mode}, {myset['mask'].size}")
+
         myset['initial_img'] = image.convert("RGB")
+        #print(f"\nif myset['initial_img']: image:{myset['initial_img'].mode}, {myset['initial_img'].size}")
     else:
         myset['initial_img'] = None
         myset['mask'] = None
@@ -160,6 +165,7 @@ def myprocess(*args, **kwargs):
     # Save the parameters to a file.
     settings_filename = os.path.join(myset['output_path'], "settings.txt")
     myset['initial_img'] = None  # No need to save the initial image
+    myset['mask'] = None  # No need to save the initial image
 
     with open(settings_filename, "w+", encoding="utf-8") as f:
         json.dump(myset, f, ensure_ascii=False, indent=4)
