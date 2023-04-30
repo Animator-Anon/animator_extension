@@ -49,6 +49,9 @@ def main_process(myset: dict,
     else:
         source_cap = None
 
+    # Handle initial frame.
+
+
     # Main loop through frames
     for frame_no in range(frame_count):
 
@@ -134,7 +137,8 @@ def main_process(myset: dict,
 
                 if init_img.size != (myset['width'], myset['height']):
                     init_img = init_img.resize((myset['width'], myset['height']), Image.Resampling.LANCZOS)
-                    pimg.mask = pimg.mask.resize((myset['width'], myset['height']), Image.Resampling.LANCZOS)
+                    if pimg.mask is not None:
+                        pimg.mask = pimg.mask.resize((myset['width'], myset['height']), Image.Resampling.LANCZOS)
         else:
             init_img = last_frame
 
