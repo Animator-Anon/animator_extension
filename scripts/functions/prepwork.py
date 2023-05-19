@@ -74,7 +74,7 @@ def setup_processors(mysettings: dict) -> Tuple[processing.StableDiffusionProces
 
     if mysettings['mask']:
         pimg.mask_blur = 4
-        #pimg.inpainting_fill = 1
+        pimg.inpainting_fill = 1
         #pimg.inpaint_full_res = True
         #pimg.inpaint_full_res_padding = 32
         #pimg.mask_for_overlay = None

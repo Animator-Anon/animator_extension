@@ -41,6 +41,8 @@ function reenable_animator() {
     //gradioApp().getElementById(AA_STOP_BUTTON).style.display = "none";
 }
 
+/*
 onUiUpdate(function(){
     check_gallery(AA_GALLERY)
 })
+*/
