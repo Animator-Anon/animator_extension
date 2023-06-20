@@ -12,7 +12,7 @@ import gradio as gr
 import torch
 import numpy as np
 from scripts.functions import prepwork, sequential, loopback, export
-from modules import script_callbacks, shared, sd_models, scripts, ui_common
+from modules import script_callbacks, shared, sd_models, scripts, ui_common, ui
 from modules.call_queue import wrap_gradio_gpu_call
 from modules.shared import cmd_opts
 from modules.ui import setup_progressbar
@@ -390,7 +390,9 @@ def on_ui_tabs():
                     # aa_gallery    elem_id=f"animator_extension_gallery"
                     # result_gallery, generation_info if tabname != "extras" else html_info_x, html_info, html_log
                     aa_gallery, aa_htmlinfo_x, aa_htmlinfo, aa_htmllog = \
-                        ui_common.create_output_panel("animator_extension", shared.opts.animatoranon_output_folder)
+                        ui.create_output_panel("animator_extension", shared.opts.animatoranon_output_folder)
+                    #aa_gallery, aa_htmlinfo_x, aa_htmlinfo, aa_htmllog = \
+                    #   ui_common.create_output_panel("animator_extension", shared.opts.animatoranon_output_folder)
 
         btn_proc.click(fn=wrap_gradio_gpu_call(myprocess, extra_outputs=[gr.update()]),
                        _js="start_animator",

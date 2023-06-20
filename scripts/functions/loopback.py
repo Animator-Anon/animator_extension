@@ -219,7 +219,13 @@ def main_process(myset: dict,
 
         pimg.init_images = [init_img]
 
+        if myset['debug']:
+            pimg.init_images[0].save(os.path.join(myset['output_path'], f"frame_{frame_save:05}_a.png"))
+
         processed = processing.process_images(pimg)
+
+        if myset['debug']:
+            processed.images[0].save(os.path.join(myset['output_path'], f"frame_{frame_save:05}_b.png"))
 
         #############################
         # Post-process destination frame
@@ -243,7 +249,10 @@ def main_process(myset: dict,
         if frame_no > 0 and myset['smoothing'] > 0 and not myset['film_interpolation']:
             # working a frame behind, smooth from last_frame -> post_processed_image
             for idx, img in enumerate(postprocessing.morph(last_frame, post_processed_image, myset['smoothing'])):
-                img.save(os.path.join(myset['output_path'], f"frame_{frame_save:05}.png"))
+                if myset['debug']:
+                    img.save(os.path.join(myset['output_path'], f"frame_{frame_save:05}_p.png"))
+                else:
+                    img.save(os.path.join(myset['output_path'], f"frame_{frame_save:05}.png"))
                 print(f"{frame_save:03}: {frame_no:03} > {idx} smooth frame")
                 frame_save += 1
 
@@ -256,7 +265,10 @@ def main_process(myset: dict,
         if last_frame.mode != 'RGBA':
             last_frame = last_frame.convert('RGBA')
 
-        post_processed_image.save(os.path.join(myset['output_path'], f"frame_{frame_save:05}.png"))
+        if myset['debug']:
+            post_processed_image.save(os.path.join(myset['output_path'], f"frame_{frame_save:05}_c.png"))
+        else:
+            post_processed_image.save(os.path.join(myset['output_path'], f"frame_{frame_save:05}.png"))
         frame_save += 1
 
         shared.state.current_image = post_processed_image
