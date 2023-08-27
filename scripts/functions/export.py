@@ -65,13 +65,14 @@ def film_interpolation(my_set: dict, create_vid: bool = True, create_bat: bool =
         return
 
     if not os.path.exists(film_folder):
-        print(f'FILM could not be found in this folder: {film_folder}')
+        print(f'FILM launching batch file could not be found in this folder: {film_folder}')
         return
 
-    tmp_path = os.path.join(film_folder, 'predict.py')
-    if not os.path.exists(tmp_path):
-        print(f'FILM could not be found in this folder: {tmp_path}')
-        return
+    # It shouldn't be necessary to look for this, the bat file is supposed to handle everything.
+    # tmp_path = os.path.join(film_folder, 'predict.py')
+    # if not os.path.exists(tmp_path):
+    #        print(f'FILM could not be found in this folder: {tmp_path}')
+    #        return
 
     args = [film_executable,
             str(my_set['output_path']),
